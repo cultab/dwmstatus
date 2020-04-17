@@ -24,8 +24,8 @@
 
 #define CPU_NBR 4
 #define BAR_HEIGHT 15
-#define BAT_NOW_FILE "/sys/class/power_supply/BAT0/charge_now"
-#define BAT_FULL_FILE "/sys/class/power_supply/BAT0/charge_full"
+#define BAT_NOW_FILE "/sys/class/power_supply/BAT0/energy_now"
+#define BAT_FULL_FILE "/sys/class/power_supply/BAT0/energy_full"
 #define BAT_STATUS_FILE "/sys/class/power_supply/BAT0/status"
 
 #define TEMP_SENSOR_FILE "/sys/class/hwmon/hwmon1/temp1_input"
@@ -74,7 +74,7 @@ main(void)
 
   char bat0[256];
   
-  const char CELSIUS_CHAR = (char)176;
+  const char *CELSIUS_CHAR = "°";//(char)176;
   
   if (!(dpy = XOpenDisplay(NULL))) {
     fprintf(stderr, "Cannot open display.\n");
@@ -105,8 +105,8 @@ main(void)
       int ret = snprintf(
                status, 
                MSIZE, 
-               "^c%s^ [VOL %d%%] [CPU^f1^%s^f4^%s^f4^%s^f4^%s^f3^^c%s^] [MEM^f1^%s^f20^^c%s^] [W %d] [TEMP %d%cC] %s^c%s^ %s ", 
-             fg_color,
+               "^c%s^ [VOL %d%%] [CPU^f1^%s^f4^%s^f4^%s^f4^%s^f3^^c%s^] [MEM^f1^%s^f20^^c%s^] [W %d] [TEMP %d%sC] %s^c%s^ %s ", 
+               fg_color,
                vol, 
                cpu_bar[0],
                cpu_bar[1],  
@@ -116,7 +116,7 @@ main(void)
                mem_bar,
                fg_color,
                wifi,
-               temp, CELSIUS_CHAR, 
+               temp, CELSIUS_CHAR,
                bat0, fg_color, datetime
                );
       if(ret >= MSIZE)
@@ -225,9 +225,10 @@ int getBatteryBar(char *string, size_t size, int w, int h)
   
   char *bg_color = "#444444";
   char *border_color = "#EEEEEE";
+  char *charging_color = "#7070ff";
   char fg_color[8];
   if(getBatteryStatus())
-	  memcpy(fg_color, border_color, 8);
+	  memcpy(fg_color, charging_color, 8);
   else
 	  percentColor(fg_color, percent);
 
@@ -502,3 +503,4 @@ getVolume()
   return vol;
 }
 
+/* vim: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
