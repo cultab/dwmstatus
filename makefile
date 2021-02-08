@@ -40,6 +40,10 @@ install: ${PROG_NAME}
 	@cp -f ${PROG_NAME} ${PREFIX}/bin/${PROG_NAME}
 	@chmod 755 ${PREFIX}/bin/${PROG_NAME}
 
+run: ${PROG_NAME}
+	-pkill dwmstatus
+	./dwmstatus &
+
 mrproper:
 	rm -rf *.o *~ \#*\# ${PROG_NAME}
 
