@@ -28,7 +28,8 @@
 #define BAT_FULL_FILE "/sys/class/power_supply/BAT0/energy_full"
 #define BAT_STATUS_FILE "/sys/class/power_supply/BAT0/status"
 
-#define TEMP_SENSOR_FILE "/sys/class/hwmon/hwmon1/temp1_input"
+/* #define TEMP_SENSOR_FILE "/sys/class/hwmon/hwmon1/temp1_input" */
+#define TEMP_SENSOR_FILE "/sys/class/thermal/thermal_zone0/temp"
 #define MEMINFO_FILE "/proc/meminfo"
 
 int   getBattery();
@@ -39,6 +40,7 @@ char* getDateTime();
 float getFreq(char *file);
 int   getTemperature();
 int   getVolume();
+int   getBrightness();
 void  setStatus(Display *dpy, char *str);
 int   getWifiPercent();
 
@@ -63,16 +65,18 @@ main(void)
   
   int cpu_percent[CPU_NBR];
   char *datetime;
-  int temp, vol, wifi;
+  int temp, vol, bright, wifi;
   char *cpu_bar[CPU_NBR];
 
   int mem_percent;
   char *mem_bar;
+  char mem_color[8];
 
-  char *fg_color = "#EEEEEE";
+  char *fg_color = "#c9c9c9";
   char cpu_color[8];
 
-  char bat0[256];
+  float bat_percent;
+  char  bat0[256];
   
   const char *CELSIUS_CHAR = "°";//(char)176;
   
@@ -88,12 +92,15 @@ main(void)
    while(1)
     {
 
-	  mem_percent = getMemPercent();
-	  mem_bar = hBar(mem_percent, 20, 9,  "#FF0000", "#444444");
+      mem_percent = getMemPercent();
+      percentColorGeneric(mem_color, mem_percent, 1);
+      mem_bar = hBar(mem_percent, 20, 9, mem_color, "#444444");
       temp = getTemperature();
       datetime = getDateTime();
+      bat_percent = getBattery();
       getBatteryBar(bat0, 256, 30, 11);
       vol = getVolume();
+      bright = getBrightness();
       getCpuUsage(cpu_percent);
       wifi = getWifiPercent();
       for(int i = 0; i < CPU_NBR; ++i)
@@ -103,21 +110,22 @@ main(void)
       }
       
       int ret = snprintf(
-               status, 
-               MSIZE, 
-               "^c%s^ [VOL %d%%] [CPU^f1^%s^f4^%s^f4^%s^f4^%s^f3^^c%s^] [MEM^f1^%s^f20^^c%s^] [W %d] [TEMP %d%sC] %s^c%s^ %s ", 
+               status,
+               MSIZE,
+               "^c%s^ [VOL %d%%] [Brightness %d%%] [CPU^f1^%s^f4^%s^f4^%s^f4^%s^f3^^c%s^] [MEM^f1^%s^f20^^c%s^] [W %d] [%d%sC] [%s^c%s^ %.0f%%] %s ", 
                fg_color,
-               vol, 
+               vol,
+               bright,
                cpu_bar[0],
-               cpu_bar[1],  
-               cpu_bar[2],  
+               cpu_bar[1],
+               cpu_bar[2],
                cpu_bar[3],
                fg_color,
                mem_bar,
                fg_color,
                wifi,
                temp, CELSIUS_CHAR,
-               bat0, fg_color, datetime
+               bat0, fg_color, bat_percent, datetime
                );
       if(ret >= MSIZE)
 	fprintf(stderr, "error: buffer too small %d/%d\n", MSIZE, ret);
@@ -224,7 +232,7 @@ int getBatteryBar(char *string, size_t size, int w, int h)
   int percent = getBattery();
   
   char *bg_color = "#444444";
-  char *border_color = "#EEEEEE";
+  char *border_color = "#202020";
   char *charging_color = "#7070ff";
   char fg_color[8];
   if(getBatteryStatus())
@@ -501,6 +509,23 @@ getVolume()
      }}} */
 
   return vol;
+}
+
+int
+getBrightness() {
+  FILE *fp;
+  float brightness;
+
+  fp = popen("/bin/xbacklight -get", "r");
+  if (fp == NULL) {
+      fprintf(stderr, "Error getting backlight level.\n");
+      exit(1);
+  }
+  fscanf(fp, "%f", &brightness);
+
+  pclose(fp);
+
+  return (int)brightness;
 }
 
 /* vim: set tabstop=2 shiftwidth=2 softtabstop=2 expandtab: */
